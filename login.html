@@ -1,47 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Login</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 2rem; }
-    input, button, select { margin: 0.5rem 0; padding: 0.5rem; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Login</title>
+<link rel="stylesheet" href="style.css" />
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDJCN7IjG7FcqhUgfkr_yyM-3FVbPWj6Hw",
+  authDomain: "timetablelive-cdb49.firebaseapp.com",
+  projectId: "timetablelive-cdb49",
+  storageBucket: "timetablelive-cdb49.appspot.com",
+  messagingSenderId: "55318472637",
+  appId: "1:55318472637:web:873bff28189b2a9c2814d4",
+  measurementId: "G-VW281JQ8GF"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    const idTokenResult = await user.getIdTokenResult();
+    const role = idTokenResult.claims.role || 'staff';
+    if (role === 'admin') {
+      window.location.href = 'admin.html';
+    } else {
+      window.location.href = 'index.html';
+    }
+  } catch (error) {
+    alert('Login failed: ' + error.message);
+  }
+});
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    user.getIdTokenResult().then(idTokenResult => {
+      const role = idTokenResult.claims.role || 'staff';
+      if(role === 'admin') window.location.href = 'admin.html';
+      else window.location.href = 'index.html';
+    });
+  }
+});
+</script>
 </head>
 <body>
-  <h2>Login</h2>
-  <label>Username:</label><br>
-  <input type="text" id="username" /><br>
-  <label>Password:</label><br>
-  <input type="password" id="password" /><br>
-  <button onclick="login()">Login</button>
-
-  <script>
-    const users = [
-      { username: "admin", password: "admin", role: "admin" },
-      { username: "staff", password: "staff", role: "staff" },
-      { username: "staff2", password: "staffpass", role: "staff" }
-    ];
-
-    function login() {
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value;
-
-      const user = users.find(u => u.username === username && u.password === password);
-
-      if (!user) {
-        alert("Invalid login");
-        return;
-      }
-
-      localStorage.setItem("user", JSON.stringify(user));
-      if (user.role === "admin") {
-        window.location.href = "admin.html";
-      } else {
-        window.location.href = "staff-home.html";
-      }
-    }
-  </script>
+<h1>Login</h1>
+<form id="login-form">
+  <label for="email">Email:</label><br />
+  <input type="email" id="email" required /><br /><br />
+  <label for="password">Password:</label><br />
+  <input type="password" id="password" required /><br /><br />
+  <button type="submit">Login</button>
+</form>
 </body>
 </html>
-
