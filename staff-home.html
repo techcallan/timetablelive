@@ -1,0 +1,51 @@
+<!-- staff-home.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Staff Home</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2rem; }
+    button { padding: 0.5rem 1rem; }
+  </style>
+</head>
+<body>
+  <h2>Welcome, <span id="staffName"></span></h2>
+  <p>Select a session and go to the claiming page.</p>
+
+  <label>Select Session:</label><br>
+  <select id="sessionSelect"></select><br><br>
+  <button onclick="goToClaim()">Go to Claim Page</button><br><br>
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user || user.role !== "staff") {
+      window.location.href = "login.html";
+    }
+    document.getElementById("staffName").textContent = user.username;
+
+    const sessions = JSON.parse(localStorage.getItem("sessions") || "[]");
+    const sessionSelect = document.getElementById("sessionSelect");
+
+    sessions.forEach(date => {
+      const opt = document.createElement("option");
+      opt.value = date;
+      opt.textContent = date;
+      sessionSelect.appendChild(opt);
+    });
+
+    function goToClaim() {
+      const selected = sessionSelect.value;
+      if (!selected) return alert("Select a session");
+      localStorage.setItem("selectedSession", selected);
+      window.location.href = "claim.html";
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+  </script>
+</body>
+</html>
