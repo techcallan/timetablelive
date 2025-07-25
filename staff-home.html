@@ -5,14 +5,14 @@
   <title>Staff Home</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 2rem; }
-    select, button { padding: 0.5rem; margin-top: 1rem; }
+    input, button { padding: 0.5rem; margin-top: 1rem; }
   </style>
 </head>
 <body>
   <h2>Welcome, <span id="staffName"></span></h2>
 
-  <label for="sessionSelect">Select a Session:</label><br>
-  <select id="sessionSelect"></select><br>
+  <label for="sessionDate">Select a Session Date:</label><br>
+  <input type="date" id="sessionDate" /><br>
   <button onclick="goToClaim()">Go to Claim Page</button><br><br>
 
   <button onclick="logout()">Logout</button>
@@ -25,19 +25,12 @@
 
     document.getElementById("staffName").textContent = user.username;
 
-    const sessions = JSON.parse(localStorage.getItem("sessions") || "[]");
-    const sessionSelect = document.getElementById("sessionSelect");
-
-    sessions.forEach(session => {
-      const opt = document.createElement("option");
-      opt.value = session;
-      opt.textContent = session;
-      sessionSelect.appendChild(opt);
-    });
+    // Default today
+    document.getElementById("sessionDate").valueAsDate = new Date();
 
     function goToClaim() {
-      const session = sessionSelect.value;
-      if (!session) return alert("Select a session");
+      const session = document.getElementById("sessionDate").value;
+      if (!session) return alert("Select a session date");
       localStorage.setItem("selectedSession", session);
       window.location.href = "claim.html";
     }
