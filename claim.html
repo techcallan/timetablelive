@@ -1,3 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claim Teaching Periods</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    color: #222;
+    margin: 0; padding: 20px;
+  }
+  body.dark-mode {
+    background-color: #121212;
+    color: #ddd;
+  }
+  table {
+    border-collapse: collapse;
+    margin: 15px 0;
+    width: 100%;
+    max-width: 500px;
+  }
+  th, td {
+    border: 1px solid #999;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  button.claim-btn {
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #ddd;
+  }
+  #claimModal {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border: 2px solid #333;
+    padding: 20px;
+    z-index: 10;
+    width: 320px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  }
+  #claimModal.dark-mode {
+    background: #222;
+    border-color: #aaa;
+    color: #eee;
+  }
+  #claimModal.hidden {
+    display: none;
+  }
+  label {
+    display: block;
+    margin-top: 10px;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 6px;
+    margin-top: 4px;
+    box-sizing: border-box;
+  }
+  #overlay {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.5);
+    z-index: 5;
+  }
+  #overlay.hidden {
+    display: none;
+  }
+  #topBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 500px;
+  }
+  #exportBtn, #darkModeToggle {
+    margin-left: 10px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div id="topBar">
+    <h2>Claim Teaching Periods for <span id="sessionDate"></span></h2>
+    <div>
+      <button id="exportBtn">Export as PDF</button>
+      <button id="darkModeToggle">Toggle Dark Mode</button>
+    </div>
+  </div>
+  
+  <div id="tablesContainer"></div>
+
+  <div id="overlay" class="hidden"></div>
+  <div id="claimModal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle">Claim Period</h3>
+    <label for="teacherName">Your Name:</label>
+    <input type="text" id="teacherName" />
+
+    <label for="room" id="roomLabel">Room:</label>
+    <input type="text" id="room" />
+
+    <label for="subject" id="subjectLabel">Subject:</label>
+    <input type="text" id="subject" />
+
+    <div style="margin-top:15px; text-align:right;">
+      <button onclick="submitClaim()">Claim</button>
+      <button onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 const yearGroups = [
@@ -6,81 +121,95 @@ const yearGroups = [
 ];
 
 const nameOnlyTables = ["Isolation", "On-Call", "Pastoral", "Cafeteria", "Food Truck", "Detention"];
-const specialRowOverride = {
-  "Learning Support_PERIOD 5": "Early Dismissal",
-  "Behaviour Support_PERIOD 5": "Early Dismissal"
-};
 
 const periods = [
   "FORM", "PERIOD 1", "PERIOD 2", "BREAK", "PERIOD 3", "PERIOD 4", "LUNCH", "PERIOD 5"
 ];
 
-const claimable = ["FORM", "PERIOD 1", "PERIOD 2", "PERIOD 3", "PERIOD 4", "PERIOD 5"];
-
 const user = JSON.parse(localStorage.getItem("user"));
 const session = localStorage.getItem("selectedSession");
-const allClaims = JSON.parse(localStorage.getItem("claims") || "{}");
+let allClaims = JSON.parse(localStorage.getItem("claims") || "{}");
 
-const sessionKey = `${session}`;
 if (!user || !session) {
+  alert("You are not logged in or no session selected. Redirecting to login.");
   window.location.href = "login.html";
 }
+
 document.getElementById("sessionDate").textContent = session;
 
-if (!allClaims[sessionKey]) {
-  allClaims[sessionKey] = {};
+if (!allClaims[session]) {
+  allClaims[session] = {};
 }
 
 let selectedSlot = null;
 let nameOnlyMode = false;
 
+// Special label overrides for Learning Support & Behaviour Support PERIOD 5
+const specialLabels = {
+  "Learning Support_PERIOD 5": "Early Dismissal",
+  "Behaviour Support_PERIOD 5": "Early Dismissal"
+};
+
 function renderTables() {
   const container = document.getElementById("tablesContainer");
   container.innerHTML = "";
 
-  yearGroups.forEach(group => container.appendChild(createPeriodTable(group)));
-  nameOnlyTables.forEach(name => container.appendChild(createNameOnlyTable(name)));
+  yearGroups.forEach(group => {
+    container.appendChild(createPeriodTable(group));
+  });
+
+  nameOnlyTables.forEach(name => {
+    container.appendChild(createNameOnlyTable(name));
+  });
 }
 
 function createPeriodTable(group) {
   const table = document.createElement("table");
   const tbody = document.createElement("tbody");
 
-  for (let i = 0; i < periods.length + 1; i++) {
+  for (let i = 0; i <= periods.length; i++) {
     const row = document.createElement("tr");
-    const label = document.createElement("td");
-    const action = document.createElement("td");
+    const col1 = document.createElement("td");
+    const col2 = document.createElement("td");
 
     if (i === 0) {
-      action.textContent = group;
-      label.textContent = "";
+      // Header row
+      col2.textContent = group;
     } else {
       const period = periods[i - 1];
-      label.textContent = period;
+      col1.textContent = period;
 
-      const slotKey = `${group}_${period}`;
-      const slot = allClaims[sessionKey][slotKey];
+      const key = `${group}_${period}`;
 
-      // Special override
-      if (specialRowOverride[slotKey]) {
-        action.textContent = specialRowOverride[slotKey];
-      } else if (claimable.includes(period)) {
-        if (slot) {
-          action.innerHTML = `<div class="claim-info">${slot.name}<br>${slot.room || ""}<br>${slot.subject || ""}<br><button onclick="editClaim('${slotKey}')">Edit</button></div>`;
+      if (period === "BREAK" || period === "LUNCH") {
+        col2.textContent = "-";
+      }
+      else if (specialLabels[key]) {
+        col2.textContent = specialLabels[key];
+      }
+      else {
+        const claim = allClaims[session][key];
+        if (claim) {
+          col2.innerHTML = `
+            <div>
+              <strong>${claim.name}</strong><br>
+              ${claim.room ? claim.room + "<br>" : ""}
+              ${claim.subject ? claim.subject + "<br>" : ""}
+              <button onclick="editClaim('${key}')">Edit</button>
+            </div>
+          `;
         } else {
           const btn = document.createElement("button");
           btn.textContent = "Claim";
           btn.className = "claim-btn";
-          btn.onclick = () => openModal(slotKey, false);
-          action.appendChild(btn);
+          btn.onclick = () => openModal(key, false);
+          col2.appendChild(btn);
         }
-      } else {
-        action.textContent = "-";
       }
     }
 
-    row.appendChild(label);
-    row.appendChild(action);
+    row.appendChild(col1);
+    row.appendChild(col2);
     tbody.appendChild(row);
   }
 
@@ -89,35 +218,44 @@ function createPeriodTable(group) {
 }
 
 function createNameOnlyTable(name) {
-  const periods = name === "Detention" ? ["LUNCH"] : ["BREAK", "LUNCH"];
   const table = document.createElement("table");
   const tbody = document.createElement("tbody");
 
-  const row1 = document.createElement("tr");
-  row1.innerHTML = `<td></td><td>${name}</td>`;
-  tbody.appendChild(row1);
+  // Detention only LUNCH; others BREAK and LUNCH
+  const rows = (name === "Detention") ? ["LUNCH"] : ["BREAK", "LUNCH"];
 
-  periods.forEach(period => {
+  // Header row
+  const headerRow = document.createElement("tr");
+  headerRow.innerHTML = `<td></td><td>${name}</td>`;
+  tbody.appendChild(headerRow);
+
+  rows.forEach(rowLabel => {
     const row = document.createElement("tr");
-    const label = document.createElement("td");
-    const action = document.createElement("td");
+    const col1 = document.createElement("td");
+    const col2 = document.createElement("td");
 
-    label.textContent = period;
-    const slotKey = `${name}_${period}`;
-    const slot = allClaims[sessionKey][slotKey];
+    col1.textContent = rowLabel;
 
-    if (slot) {
-      action.innerHTML = `<div class="claim-info">${slot.name}<br><button onclick="editClaim('${slotKey}', true)">Edit</button></div>`;
+    const key = `${name}_${rowLabel}`;
+    const claim = allClaims[session][key];
+
+    if (claim) {
+      col2.innerHTML = `
+        <div>
+          <strong>${claim.name}</strong><br>
+          <button onclick="editClaim('${key}', true)">Edit</button>
+        </div>
+      `;
     } else {
       const btn = document.createElement("button");
       btn.textContent = "Claim";
       btn.className = "claim-btn";
-      btn.onclick = () => openModal(slotKey, true);
-      action.appendChild(btn);
+      btn.onclick = () => openModal(key, true);
+      col2.appendChild(btn);
     }
 
-    row.appendChild(label);
-    row.appendChild(action);
+    row.appendChild(col1);
+    row.appendChild(col2);
     tbody.appendChild(row);
   });
 
@@ -129,84 +267,89 @@ function openModal(slotKey, isNameOnly) {
   selectedSlot = slotKey;
   nameOnlyMode = isNameOnly;
 
-  document.getElementById("teacherName").value = user.username;
+  document.getElementById("teacherName").value = user.username || "";
   document.getElementById("room").value = "";
   document.getElementById("subject").value = "";
 
   document.getElementById("room").style.display = isNameOnly ? "none" : "inline-block";
+  document.getElementById("roomLabel").style.display = isNameOnly ? "none" : "block";
+
   document.getElementById("subject").style.display = isNameOnly ? "none" : "inline-block";
+  document.getElementById("subjectLabel").style.display = isNameOnly ? "none" : "block";
 
   document.getElementById("claimModal").classList.remove("hidden");
+  document.getElementById("overlay").classList.remove("hidden");
 }
 
 function editClaim(slotKey, isNameOnly = false) {
   selectedSlot = slotKey;
   nameOnlyMode = isNameOnly;
-  const slot = allClaims[sessionKey][slotKey];
 
-  document.getElementById("teacherName").value = slot.name;
-  document.getElementById("room").value = slot.room || "";
-  document.getElementById("subject").value = slot.subject || "";
+  const claim = allClaims[session][slotKey];
+  if (!claim) return;
+
+  document.getElementById("teacherName").value = claim.name || user.username || "";
+  document.getElementById("room").value = claim.room || "";
+  document.getElementById("subject").value = claim.subject || "";
 
   document.getElementById("room").style.display = isNameOnly ? "none" : "inline-block";
+  document.getElementById("roomLabel").style.display = isNameOnly ? "none" : "block";
+
   document.getElementById("subject").style.display = isNameOnly ? "none" : "inline-block";
+  document.getElementById("subjectLabel").style.display = isNameOnly ? "none" : "block";
 
   document.getElementById("claimModal").classList.remove("hidden");
+  document.getElementById("overlay").classList.remove("hidden");
 }
 
 function closeModal() {
   document.getElementById("claimModal").classList.add("hidden");
+  document.getElementById("overlay").classList.add("hidden");
+  selectedSlot = null;
+  nameOnlyMode = false;
 }
 
 function submitClaim() {
+  if (!selectedSlot) return;
+
   const name = document.getElementById("teacherName").value.trim();
+  if (!name) {
+    alert("Please enter your name.");
+    return;
+  }
   const room = nameOnlyMode ? "" : document.getElementById("room").value.trim();
   const subject = nameOnlyMode ? "" : document.getElementById("subject").value.trim();
 
-  if (!name) {
-    alert("Name is required");
-    return;
-  }
+  allClaims[session][selectedSlot] = { name, room, subject };
 
-  // Prevent duplicate claims by name in same period
-  for (const key in allClaims[sessionKey]) {
-    if (
-      allClaims[sessionKey][key].name === name &&
-      key.split("_")[1] === selectedSlot.split("_")[1] &&
-      key !== selectedSlot
-    ) {
-      alert("You already claimed a slot for this period.");
-      return;
-    }
-  }
-
-  allClaims[sessionKey][selectedSlot] = { name, room, subject };
   localStorage.setItem("claims", JSON.stringify(allClaims));
+
   closeModal();
   renderTables();
 }
 
-function toggleDarkMode() {
-  document.body.classList.toggle("dark-mode");
-}
-
-function logout() {
-  localStorage.removeItem("user");
-  window.location.href = "login.html";
-}
-
-function exportToPDF() {
-  const container = document.getElementById("tablesContainer");
+document.getElementById("exportBtn").addEventListener("click", () => {
+  const element = document.getElementById("tablesContainer");
   const opt = {
-    margin: 0.5,
-    filename: `ClaimSheet-${sessionKey}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    margin:       0.5,
+    filename:     `claims_${session.replace(/[^a-z0-9]/gi,'_')}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
   };
-  html2pdf().from(container).set(opt).save();
-}
+  html2pdf().set(opt).from(element).save();
+});
+
+document.getElementById("darkModeToggle").addEventListener("click", () => {
+  document.body.classList.toggle("dark-mode");
+  document.getElementById("claimModal").classList.toggle("dark-mode");
+});
+
+// Clicking outside modal closes it
+document.getElementById("overlay").addEventListener("click", closeModal);
 
 renderTables();
 </script>
+</body>
+</html>
 
