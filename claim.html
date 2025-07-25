@@ -120,7 +120,9 @@ const yearGroups = [
   "Sixth Form", "Learning Support", "Behaviour Support"
 ];
 
-const nameOnlyTables = ["Isolation", "On-Call", "Pastoral", "Cafeteria", "Food Truck", "Detention"];
+const fullTimetableGroups = ["Pastoral", "On-Call", "Isolation"];
+
+const nameOnlyTables = ["Cafeteria", "Food Truck", "Detention"];
 
 const periods = [
   "FORM", "PERIOD 1", "PERIOD 2", "BREAK", "PERIOD 3", "PERIOD 4", "LUNCH", "PERIOD 5"
@@ -154,10 +156,17 @@ function renderTables() {
   const container = document.getElementById("tablesContainer");
   container.innerHTML = "";
 
+  // Render Year Groups tables
   yearGroups.forEach(group => {
     container.appendChild(createPeriodTable(group));
   });
 
+  // Render full timetable groups
+  fullTimetableGroups.forEach(group => {
+    container.appendChild(createPeriodTable(group));
+  });
+
+  // Render name only tables
   nameOnlyTables.forEach(name => {
     container.appendChild(createNameOnlyTable(name));
   });
