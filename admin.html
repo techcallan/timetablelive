@@ -1,61 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Admin Dashboard</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 2rem; }
-    input, button { margin: 0.5rem 0; padding: 0.5rem; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Dashboard</title>
+<link rel="stylesheet" href="style.css" />
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDJCN7IjG7FcqhUgfkr_yyM-3FVbPWj6Hw",
+  authDomain: "timetablelive-cdb49.firebaseapp.com",
+  projectId: "timetablelive-cdb49",
+  storageBucket: "timetablelive-cdb49.appspot.com",
+  messagingSenderId: "55318472637",
+  appId: "1:55318472637:web:873bff28189b2a9c2814d4",
+  measurementId: "G-VW281JQ8GF"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, user => {
+  if (!user) {
+    window.location.href = 'login.html';
+  }
+});
+
+function logout() {
+  signOut(auth).then(() => {
+    window.location.href = 'login.html';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('logout-btn').addEventListener('click', logout);
+});
+</script>
 </head>
 <body>
-  <h2>Admin Dashboard</h2>
-  <p>Welcome, <span id="adminName"></span>!</p>
-
-  <label>Create New Session (Date):</label><br>
-  <input type="date" id="sessionDate" />
-  <button onclick="createSession()">Create Session</button>
-
-  <h3>Sessions</h3>
-  <ul id="sessionList"></ul>
-
-  <button onclick="logout()">Logout</button>
-
-  <script>
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user || user.role !== "admin") {
-      window.location.href = "login.html";
-    }
-    document.getElementById("adminName").textContent = user.username;
-
-    let sessions = JSON.parse(localStorage.getItem("sessions") || "[]");
-
-    function renderSessions() {
-      const list = document.getElementById("sessionList");
-      list.innerHTML = "";
-      sessions.forEach(date => {
-        const li = document.createElement("li");
-        li.textContent = date;
-        list.appendChild(li);
-      });
-    }
-
-    function createSession() {
-      const date = document.getElementById("sessionDate").value;
-      if (!date) return alert("Please select a date");
-      if (sessions.includes(date)) return alert("Session already exists");
-      sessions.push(date);
-      localStorage.setItem("sessions", JSON.stringify(sessions));
-      renderSessions();
-    }
-
-    function logout() {
-      localStorage.clear();
-      window.location.href = "login.html";
-    }
-
-    renderSessions();
-  </script>
+<h1>Admin Dashboard</h1>
+<p>This is a placeholder for admin functions.</p>
+<button id="logout-btn">Logout</button>
 </body>
 </html>
+
 
