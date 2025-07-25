@@ -1,45 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Staff Home</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 2rem; }
-    input, button { padding: 0.5rem; margin-top: 1rem; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Staff Welcome</title>
+<link rel="stylesheet" href="style.css" />
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDJCN7IjG7FcqhUgfkr_yyM-3FVbPWj6Hw",
+  authDomain: "timetablelive-cdb49.firebaseapp.com",
+  projectId: "timetablelive-cdb49",
+  storageBucket: "timetablelive-cdb49.appspot.com",
+  messagingSenderId: "55318472637",
+  appId: "1:55318472637:web:873bff28189b2a9c2814d4",
+  measurementId: "G-VW281JQ8GF"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, user => {
+  if (!user) {
+    window.location.href = 'login.html';
+  }
+});
+
+function logout() {
+  signOut(auth).then(() => {
+    window.location.href = 'login.html';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('claim-btn').addEventListener('click', () => {
+    window.location.href = 'claim.html';
+  });
+  document.getElementById('logout-btn').addEventListener('click', logout);
+});
+</script>
 </head>
 <body>
-  <h2>Welcome, <span id="staffName"></span></h2>
-
-  <label for="sessionDate">Select a Session Date:</label><br>
-  <input type="date" id="sessionDate" /><br>
-  <button onclick="goToClaim()">Go to Claim Page</button><br><br>
-
-  <button onclick="logout()">Logout</button>
-
-  <script>
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user || user.role !== "staff") {
-      window.location.href = "login.html";
-    }
-
-    document.getElementById("staffName").textContent = user.username;
-
-    // Default today
-    document.getElementById("sessionDate").valueAsDate = new Date();
-
-    function goToClaim() {
-      const session = document.getElementById("sessionDate").value;
-      if (!session) return alert("Select a session date");
-      localStorage.setItem("selectedSession", session);
-      window.location.href = "claim.html";
-    }
-
-    function logout() {
-      localStorage.clear();
-      window.location.href = "login.html";
-    }
-  </script>
+<h1>Welcome Staff</h1>
+<button id="claim-btn">Go to Claim Page</button>
+<button id="logout-btn">Logout</button>
 </body>
 </html>
+
 
