@@ -1,0 +1,60 @@
+<!-- admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2rem; }
+    input, button { margin: 0.5rem 0; padding: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h2>Admin Dashboard</h2>
+  <p>Welcome, <span id="adminName"></span>!</p>
+  <label>Create New Session (Date):</label><br>
+  <input type="date" id="sessionDate" />
+  <button onclick="createSession()">Create Session</button>
+
+  <h3>Existing Sessions</h3>
+  <ul id="sessionList"></ul>
+
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user || user.role !== "admin") {
+      window.location.href = "login.html";
+    }
+    document.getElementById("adminName").textContent = user.username;
+
+    const sessionList = JSON.parse(localStorage.getItem("sessions") || "[]");
+
+    function renderSessions() {
+      const ul = document.getElementById("sessionList");
+      ul.innerHTML = "";
+      sessionList.forEach((s, i) => {
+        const li = document.createElement("li");
+        li.textContent = s;
+        ul.appendChild(li);
+      });
+    }
+
+    function createSession() {
+      const date = document.getElementById("sessionDate").value;
+      if (!date) return alert("Select a date");
+      if (sessionList.includes(date)) return alert("Session already exists");
+      sessionList.push(date);
+      localStorage.setItem("sessions", JSON.stringify(sessionList));
+      renderSessions();
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    renderSessions();
+  </script>
+</body>
+</html>
